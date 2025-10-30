@@ -1,0 +1,77 @@
+rm(list=ls())
+
+library(dplyr)
+library(Seurat)
+library(patchwork)
+library(tidyverse)
+library(sctransform)
+library(harmony)
+
+
+setwd("C:/Users/famna/Downloads/snRNA_SeuratV4_fulldata")
+snrnaseqdata <- readRDS("snRNA_geneByCell_dgCMatrix_RNA_raw_count_clean_for_manuscript.rds")
+snrnaseqdata <- CreateSeuratObject(counts = snrnaseqdata)
+snrnaseqdata[["percent.mt"]] <- PercentageFeatureSet(snrnaseqdata, pattern = "^MT-")
+VlnPlot(snrnaseqdata, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+plot1 <- FeatureScatter(snrnaseqdata, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot2 <- FeatureScatter(snrnaseqdata, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot1 + plot2
+
+
+snrnaseqdata <- subset(snrnaseqdata, subset = nFeature_RNA > 500 & nFeature_RNA < 2500 & percent.mt < 20)
+
+# store mitochondrial percentage in object meta data
+snrnaseqdata <- PercentageFeatureSet(snrnaseqdata, pattern = "^MT-", col.name = "percent.mt")
+
+# run sctransform
+snrnaseqdata <- SCTransform(snrnaseqdata, vars.to.regress = "percent.mt", verbose = FALSE)
+
+#snrnaseqdata <- NormalizeData(snrnaseqdata) 
+
+all.genes <- rownames(snrnaseqdata)
+
+#snrnaseqdata <- ScaleData(snrnaseqdata, features = all.genes) 
+
+snrnaseqdata <- FindVariableFeatures(snrnaseqdata, selection.method = "vst", nfeatures = 3000)
+
+top10 <- head(VariableFeatures(snrnaseqdata), 10)
+plot1 <- VariableFeaturePlot(snrnaseqdata)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot1 + plot2
+
+snrnaseqdata <- RunPCA(snrnaseqdata, features = VariableFeatures(object = snrnaseqdata))
+
+
+
+
+
+#snrnaseqdata <- RunHarmony(
+  #object = snrnaseqdata,
+  #group.by.vars = "orig.ident",   # Your batch variable in meta data
+  #reduction = "pca",
+  #assay.use = "SCT"            
+#)
+
+
+print(snrnaseqdata[["pca"]], dims = 1:5, nfeatures = 5)
+
+
+DimHeatmap(snrnaseqdata, dims = 1:30, cells = 500, balanced = TRUE)
+
+ElbowPlot(snrnaseqdata)
+
+
+snrnaseqdata <- FindNeighbors(snrnaseqdata, dims = 1:30)
+snrnaseqdata <- FindClusters(snrnaseqdata, resolution = 1.0)
+
+# Find cluster markers
+all_markers <- FindAllMarkers(snrnaseqdata, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+all_markers %>%
+  group_by(cluster) %>%
+  dplyr::filter(avg_log2FC > 1)
+
+VlnPlot(snrnaseqdata, features = c("GFAP"))
+
+snrnaseqdata <- RunUMAP(snrnaseqdata, dims = 1:30)
+DimPlot(snrnaseqdata, reduction = "umap")
+saveRDS(snrnaseqdata, file = "rawdatapca")
