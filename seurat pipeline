@@ -1,17 +1,16 @@
-rm(list=ls())
-
 library(dplyr)
 library(Seurat)
 library(patchwork)
-library(tidyverse)
-library(sctransform)
-library(harmony)
-
 
 setwd("C:/Users/famna/Downloads/snRNA_SeuratV4_fulldata")
-snrnaseqdata <- readRDS("snRNA_geneByCell_dgCMatrix_RNA_raw_count_clean_for_manuscript.rds")
-snrnaseqdata <- CreateSeuratObject(counts = snrnaseqdata)
-snrnaseqdata[["percent.mt"]] <- PercentageFeatureSet(snrnaseqdata, pattern = "^MT-")
+snrnaseq.data <- readRDS("snRNA_SeuratV4_object_for_manuscript.rds")
+
+cols.to.remove <- c("seurat_clusters", "annotation_cell_class", "annotation_major_cell_type", "annotation_cell_subtype")
+for (col in cols.to.remove) {
+  snrnaseq.data[[col]] <- NULL
+}
+
+snrnaseq.data[["percent.mt"]] <- PercentageFeatureSet(snrnaseqdata, pattern = "^MT-")
 VlnPlot(snrnaseqdata, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
 plot1 <- FeatureScatter(snrnaseqdata, feature1 = "nCount_RNA", feature2 = "percent.mt")
 plot2 <- FeatureScatter(snrnaseqdata, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
@@ -46,10 +45,10 @@ snrnaseqdata <- RunPCA(snrnaseqdata, features = VariableFeatures(object = snrnas
 
 
 #snrnaseqdata <- RunHarmony(
-  #object = snrnaseqdata,
-  #group.by.vars = "orig.ident",   # Your batch variable in meta data
-  #reduction = "pca",
-  #assay.use = "SCT"            
+#object = snrnaseqdata,
+#group.by.vars = "orig.ident",   # Your batch variable in meta data
+#reduction = "pca",
+#assay.use = "SCT"            
 #)
 
 
@@ -70,8 +69,8 @@ all_markers %>%
   group_by(cluster) %>%
   dplyr::filter(avg_log2FC > 1)
 
-VlnPlot(snrnaseqdata, features = c("GFAP"))
 
 snrnaseqdata <- RunUMAP(snrnaseqdata, dims = 1:30)
 DimPlot(snrnaseqdata, reduction = "umap")
-saveRDS(snrnaseqdata, file = "rawdatapca")
+saveRDS(snrnaseqdata, file = "rawdatapca.rds")
+
