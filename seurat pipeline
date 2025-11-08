@@ -17,13 +17,8 @@ plot2 <- FeatureScatter(snrnaseqdata, feature1 = "nCount_RNA", feature2 = "nFeat
 plot1 + plot2
 
 
-snrnaseqdata <- subset(snrnaseqdata, subset = nFeature_RNA > 500 & nFeature_RNA < 2500 & percent.mt < 20)
-
 # store mitochondrial percentage in object meta data
 snrnaseqdata <- PercentageFeatureSet(snrnaseqdata, pattern = "^MT-", col.name = "percent.mt")
-
-# run sctransform
-snrnaseqdata <- SCTransform(snrnaseqdata, vars.to.regress = "percent.mt", verbose = FALSE)
 
 #snrnaseqdata <- NormalizeData(snrnaseqdata) 
 
@@ -39,10 +34,6 @@ plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
 plot1 + plot2
 
 snrnaseqdata <- RunPCA(snrnaseqdata, features = VariableFeatures(object = snrnaseqdata))
-
-
-
-
 
 #snrnaseqdata <- RunHarmony(
 #object = snrnaseqdata,
@@ -62,15 +53,8 @@ ElbowPlot(snrnaseqdata)
 
 snrnaseqdata <- FindNeighbors(snrnaseqdata, dims = 1:30)
 snrnaseqdata <- FindClusters(snrnaseqdata, resolution = 1.0)
-
-# Find cluster markers
-all_markers <- FindAllMarkers(snrnaseqdata, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
-all_markers %>%
-  group_by(cluster) %>%
-  dplyr::filter(avg_log2FC > 1)
-
-
-snrnaseqdata <- RunUMAP(snrnaseqdata, dims = 1:30)
-DimPlot(snrnaseqdata, reduction = "umap")
 saveRDS(snrnaseqdata, file = "rawdatapca.rds")
+
+
+
 
