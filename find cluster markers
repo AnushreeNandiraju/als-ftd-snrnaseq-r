@@ -1,0 +1,15 @@
+data <- readRDS("C:/Users/famna/Downloads/clustersfoundw-ofindmarkers")
+devtools::install_github("immunogenomics/presto")
+
+all_markers <- FindAllMarkers(data, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+all_markers %>%
+  group_by(cluster) %>%
+  dplyr::filter(avg_log2FC > 1)
+
+
+snrnaseqdata <- RunUMAP(data, dims = 1:30)
+DimPlot(data, reduction = "umap")
+
+saveRDS(data, file = "foundmarkers", compress = FALSE)
+
+
