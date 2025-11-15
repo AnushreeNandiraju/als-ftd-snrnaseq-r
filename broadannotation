@@ -1,0 +1,81 @@
+
+library(Seurat)
+data <- readRDS("C:/Users/famna/Downloads/snRNA_SeuratV4_fulldata/foundmarkers.rds")
+DimPlot(data, reduction = "umap")
+
+# Load the counts matrix CSV quickly using fread
+countsData <- fread("C:/Users/famna/Downloads/matrix.csv", data.table = FALSE)
+
+# Assuming the first column is gene names, convert it to row names
+rownames(countsData) <- countsData[,1]
+countsData <- countsData[,-1]
+
+# Transpose if genes are rows but Seurat expects genes as rows and cells as columns
+countsData <- t(countsData)
+
+# Convert to matrix type
+countsMatrix <- as.matrix(countsData)
+
+# Create Seurat object from the matrix
+reference <- CreateSeuratObject(counts = countsMatrix, project = "AllenRef", min.cells = 3, min.features = 200)
+
+# Load metadata table separately (make sure this is a separate file, not the counts matrix)
+metadata <- fread("C:/Users/famna/Downloads/metadata.csv", data.table = FALSE)
+rownames(metadata) <- metadata[,1]
+metadata <- metadata[,-1]
+
+# Add metadata to Seurat object
+reference <- AddMetaData(reference, metadata = metadata)
+
+reference <- FindVariableFeatures(reference)
+data <- FindVariableFeatures(data)
+
+common.features <- intersect(VariableFeatures(reference), VariableFeatures(data))
+
+# Normalize RNA assay data
+reference <- NormalizeData(reference)
+
+# Find variable features
+reference <- FindVariableFeatures(reference)
+
+# Scale data
+reference <- ScaleData(reference)
+
+# Run PCA on scaled data
+reference <- RunPCA(reference)
+
+# Repeat the same for your query object
+data <- NormalizeData(data)
+data <- FindVariableFeatures(data)
+data <- ScaleData(data)
+data <- RunPCA(data)
+
+anchors <- FindTransferAnchors(
+  reference = reference,
+  query = data,
+  normalization.method = "LogNormalize",
+  reference.assay = "RNA",
+  query.assay = "RNA",
+  features = common.features,  # Make sure you defined this as shared variable features
+  dims = 1:30
+)
+
+# expiremental 
+predicted.labels <- TransferData(
+  anchorset = anchors,
+  refdata = reference$class_label,
+  dims = 1:30
+)
+data <- AddMetaData(data, metadata = predicted.labels)
+DimPlot(data, reduction = "umap", group.by = "predicted.id", label = TRUE)
+
+for(clust in unique(data$seurat_clusters)) {
+  +     cells.in.cluster <- WhichCells(data, idents = clust)
+  +     main.label <- names(sort(table(data$predicted.id[cells.in.cluster][data$predicted.id[cells.in.cluster] != "Unassigned"]), decreasing = TRUE))[1]
+  +     data$predicted.id[cells.in.cluster][data$predicted.id[cells.in.cluster] == "Unassigned"] <- main.label
+}
+
+DimPlot(data, reduction = "umap", group.by = "predicted.id", label = TRUE)
+
+saveRDS(data,"broadannotation", compress = FALSE)
+
