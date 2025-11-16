@@ -1,0 +1,47 @@
+broadannotation <- readRDS("C:/Users/famna/OneDrive/Documents/broadannotation.rds")
+
+DimPlot(broadannotation, reduction = "umap", group.by = "predicted.id", label = TRUE)
+reference <- FindVariableFeatures(reference)
+data <- FindVariableFeatures(broadannotation)
+
+common.features <- intersect(VariableFeatures(reference), VariableFeatures(broadannotation))
+
+# Normalize RNA assay data
+reference <- NormalizeData(reference)
+
+# Find variable features
+reference <- FindVariableFeatures(reference)
+
+# Scale data
+reference <- ScaleData(reference)
+
+# Run PCA on scaled data
+reference <- RunPCA(reference)
+
+# Repeat the same for your query object
+data <- NormalizeData(broadannotation)
+data <- FindVariableFeatures(broadannotation)
+data <- ScaleData(broadannotation)
+data <- RunPCA(broadannotation)
+
+anchors <- FindTransferAnchors(
+  reference = reference,
+  query = data,
+  normalization.method = "LogNormalize",
+  reference.assay = "RNA",
+  query.assay = "RNA",
+  features = common.features,  # Make sure you defined this as shared variable features
+  dims = 1:30
+)
+
+
+
+
+predicted.labels <- TransferData(
+  anchorset = anchors,
+  refdata = reference$cluster_label,
+  dims = 1:30
+)
+broadannotation <- AddMetaData(data, metadata = predicted.labels)
+
+DimPlot(broadannotation, reduction = "umap", group.by = "predicted.id", label = FALSE)
