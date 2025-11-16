@@ -34,14 +34,16 @@ anchors <- FindTransferAnchors(
   dims = 1:30
 )
 
-
-
-
 predicted.labels <- TransferData(
   anchorset = anchors,
-  refdata = reference$cluster_label,
+  refdata = reference$cell_type_alias_label,
   dims = 1:30
 )
-broadannotation <- AddMetaData(data, metadata = predicted.labels)
 
-DimPlot(broadannotation, reduction = "umap", group.by = "predicted.id", label = FALSE)
+# Add new metadata column without replacing existing "predicted.id"
+broadannotation[["specific_labels"]] <- predicted.labels$predicted.id
+
+# Now you have both "predicted.id" and "specific_labels" in your metadata
+DimPlot(broadannotation, reduction = "umap", group.by = "specific_labels", label = FALSE)
+
+broadannotation[["simple_annotation"]] <- NULL
