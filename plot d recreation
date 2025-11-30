@@ -1,0 +1,75 @@
+library(Seurat)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(patchwork)
+library(pheatmap)
+
+specificannotation <- readRDS("C:/Users/famna/OneDrive/Documents/specificannotation.rds")
+
+genes <- c("CUX2","RORB","THEMIS","PVALB","SST","VIP",
+           "LAMC3","ADARB2","PCP4","RGS4","CSF1R","MOBP","PDGFRA")
+
+expr_dat <- FetchData(
+  specificannotation,
+  vars = c(genes, "fine_cell_type", "manual_cell_type", "region")
+)
+
+expr_long <- expr_dat %>%
+  pivot_longer(cols = all_of(genes),
+               names_to = "gene",
+               values_to = "expr") %>%
+  mutate(log_expr = log10(expr + 1))
+expr_motor <- expr_long %>% filter(region == "motor cortex")
+p_motor <- ggplot(expr_motor,
+                  aes(x = fine_cell_type, y = log_expr,
+                      fill = manual_cell_type)) +
+  geom_violin(scale = "width", adjust = 1, color = NA) +
+  facet_wrap(~ gene, ncol = 1, scales = "free_y") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        strip.background = element_blank(),
+        strip.text.y = element_text(angle = 0)) +
+  labs(x = "Major cell types / subtypes",
+       y = expression(log[10](CPM + 1)),
+       title = "Motor cortex")
+expr_frontal <- expr_long %>% filter(region == "frontal cortex")
+
+p_frontal <- ggplot(expr_frontal,
+                    aes(x = fine_cell_type, y = log_expr,
+                        fill = manual_cell_type)) +
+  geom_violin(scale = "width", adjust = 1, color = NA) +
+  facet_wrap(~ gene, ncol = 1, scales = "free_y") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        strip.background = element_blank(),
+        strip.text.y = element_text(angle = 0)) +
+  labs(x = "Major cell types / subtypes",
+       y = expression(log[10](CPM + 1)),
+       title = "Frontal cortex")
+expr_dat <- FetchData(
+  specificannotation,
+  vars = c(genes, "fine_cell_type", "manual_cell_type", "region")
+)
+
+expr_long <- expr_dat %>%
+  pivot_longer(cols = all_of(genes),
+               names_to = "gene",
+               values_to = "expr") %>%
+  mutate(log_expr = log10(expr + 1))
+
+expr_frontal <- expr_long %>%
+  filter(region == "medial frontal cortex")
+p_frontal <- ggplot(expr_frontal,
+                    aes(x = fine_cell_type,
+                        y = log_expr,
+                        fill = manual_cell_type)) +
+  geom_violin(scale = "width", adjust = 1, color = NA) +
+  facet_wrap(~ gene, ncol = 1, scales = "free_y") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        strip.background = element_blank(),
+        strip.text.y = element_text(angle = 0)) +
+  labs(x = "Major cell types / subtypes",
+       y = expression(log[10](CPM + 1)),
+       title = "Frontal cortex")
