@@ -95,9 +95,7 @@ pseudo$celltype_disease <- paste(
 
 Idents(pseudo) <- "celltype_disease"
 
-##-----------------------------
-## 3. Pseudobulk DE using DESeq2
-##-----------------------------
+
 for (celltype in cell_types) {
   for (pair in cond_pairs) {
     ident1 <- paste0(celltype, "_", pair[1])  # e.g. "Exc_upper_C9-FTD"
@@ -127,9 +125,6 @@ for (celltype in cell_types) {
   }
 }
 
-##-----------------------------
-## 4. Focused comparison for one cell type
-##-----------------------------
 
 # Choose one of your actual labels, e.g. Exc_upper
 celltype_of_interest <- "Exc_upper"
@@ -159,9 +154,7 @@ bulk_res <- FindMarkers(
   assay    = "RNA"
 )
 
-##-----------------------------
-## 5. Compare single-cell vs pseudobulk
-##-----------------------------
+
 names(bulk_res) <- paste0(names(bulk_res), ".bulk")
 bulk_res$gene <- rownames(bulk_res)
 
@@ -179,9 +172,7 @@ cat("# Common: ", length(common), "\n")
 cat("# Only in single-cell: ", length(only_sc), "\n")
 cat("# Only in bulk: ", length(only_bulk), "\n")
 
-##-----------------------------
-## 6. Per-subject and per-disease violins
-##-----------------------------
+
 
 # Add subject_disease to single-cell object for per-sample violins
 data$subject_disease <- paste0(data$disease, "-", data$subject)
