@@ -6,12 +6,9 @@ library(DESeq2)
 
 data <- readRDS("C:/Users/famna/Downloads/snRNA_SeuratV4_fulldata/snRNA_SeuratV4_object_for_manuscript.rds")
 
-## Inspect metadata (optional)
-# colnames(data@meta.data)
-# unique(data$annotation_major_cell_type)
-# table(data$annotation_major_cell_type, data$disease)
 
-## Define major cell types (from your table)
+
+## Define major cell types 
 cell_types <- c(
   "Astro", "Endo",
   "Exc_deep", "Exc_intermediate", "Exc_upper",
